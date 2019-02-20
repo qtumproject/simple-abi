@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+
+	def "github.com/VoR0220/SimpleABI/definitions"
 )
 
 // make a function "Parse", which will parse a file's output after opening it
@@ -61,15 +63,15 @@ func TestParseFunction(t *testing.T) {
 	}{
 		{
 			"somevar:uint8 othervar:int64 myFunction:fn -> somereturn:uint8 otherreturn:int32",
-			qFunc{Name: "myFunction", Inputs: []qType{qType{"somevar", "uint8"}, qType{"othervar", "int64"}}, Outputs: []qType{qType{"somereturn", "uint8"}, qType{"otherreturn", "int32"}}},
+			def.QFunc{FuncName: "myFunction", Inputs: []def.QType{def.QType{TypeName: "somevar", Type: "uint8"}, def.QType{TypeName: "othervar", Type: "int64"}}, Outputs: []def.QType{def.QType{TypeName: "somereturn", Type: "uint8"}, def.QType{TypeName: "otherreturn", Type: "int32"}}},
 		},
 		{
 			"somevar:uint32 otherFunction:fn -> somereturn:uint32",
-			qFunc{Name: "otherFunction", Inputs: []qType{qType{"somevar", "uint32"}}, Outputs: []qType{qType{"somereturn", "uint32"}}},
+			def.QFunc{FuncName: "otherFunction", Inputs: []def.QType{def.QType{TypeName: "somevar", Type: "uint32"}}, Outputs: []def.QType{def.QType{TypeName: "somereturn", Type: "uint32"}}},
 		},
 		{
 			"addressvar:uniaddress someFunction:fn -> addressreturn:uniaddress",
-			qFunc{Name: "someFunction", Inputs: []qType{qType{"addressvar", "uniaddress"}}, Outputs: []qType{qType{"addressreturn", "uniaddress"}}},
+			def.QFunc{FuncName: "someFunction", Inputs: []def.QType{def.QType{TypeName: "addressvar", Type: "uniaddress"}}, Outputs: []def.QType{def.QType{TypeName: "addressreturn", Type: "uniaddress"}}},
 		},
 	}
 

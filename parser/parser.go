@@ -3,6 +3,8 @@ package parser
 import (
 	"fmt"
 	"strings"
+
+	"github.com/VoR0220/SimpleABI/definitions"
 )
 
 // components to denote where to put our strings when it comes time to assemble what we've parsed
@@ -11,30 +13,8 @@ const (
 	FUNCTION
 )
 
-// QInterfaceBuilder is a struct that is created by the parser.
-// It is to be used in the template building stage where all the variables are assembled into a solid interface for a contract.
-type QInterfaceBuilder struct {
-	Name string
-	//Functions []qFunc
-}
-
-// A qFunc is a function as defined in the SimpleABI protocol
-// It contains a name, inputs, and outputs.
-type qFunc struct {
-	Name    string
-	Inputs  []qType
-	Outputs []qType
-}
-
-// A qType is a helper type for better code generation of inputs and outputs.
-// It contains a type string and a name.
-type qType struct {
-	Name string
-	Type string
-}
-
-func Parse(input []byte) (QInterfaceBuilder, error) {
-	return QInterfaceBuilder{}, nil
+func Parse(input []byte) (definitions.QInterfaceBuilder, error) {
+	return definitions.QInterfaceBuilder{}, nil
 }
 
 // parseLine is a function that is used to create an interface builder from a line from a file
@@ -76,32 +56,32 @@ func parseAttribute(input string, number int) (string, error) {
 
 }
 
-func parseFunction(input string, number int) (qFunc, error) {
-	var inputs []qType
-	var outputs []qType
+func parseFunction(input string, number int) (definitions.QFunc, error) {
+	var inputs []definitions.QType
+	var outputs []definitions.QType
 	var name string
 
 	left, right, err := validateAndSplitFunc(input)
 	if err != nil {
-		return qFunc{}, err
+		return definitions.QFunc{}, err
 	}
 
 	name, left, err = getNameFromFunc(left)
 	if err != nil {
-		return qFunc{}, err
+		return definitions.QFunc{}, err
 	}
 
 	inputs, err = gatherTypes(left)
 	if err != nil {
-		return qFunc{}, err
+		return definitions.QFunc{}, err
 	}
 
 	outputs, err = gatherTypes(right)
 	if err != nil {
-		return qFunc{}, err
+		return definitions.QFunc{}, err
 	}
 
-	return qFunc{Name: name, Inputs: inputs, Outputs: outputs}, nil
+	return definitions.QFunc{FuncName: name, Inputs: inputs, Outputs: outputs}, nil
 }
 
 func getNameFromFunc(input string) (string, string, error) {
@@ -129,14 +109,14 @@ func getNameFromFunc(input string) (string, string, error) {
 	return name, strings.Join(append(types[:nameIndex], types[nameIndex+1:]...), " "), nil
 }
 
-func gatherTypes(input string) ([]qType, error) {
-	var maTypez []qType
+func gatherTypes(input string) ([]definitions.QType, error) {
+	var maTypez []definitions.QType
 	for _, typ := range strings.Split(input, " ") {
 		typeComponents := strings.Split(typ, ":")
 		if len(typeComponents) > 2 {
 			return nil, fmt.Errorf("parser error: Invalid formatting of output component \"%v\": needs to be formatted as name:type", typ)
 		} else if isValidType(typeComponents[1]) {
-			maTypez = append(maTypez, qType{Name: typeComponents[0], Type: typeComponents[1]})
+			maTypez = append(maTypez, definitions.QType{TypeName: typeComponents[0], Type: typeComponents[1]})
 		} else {
 			return nil, fmt.Errorf("parser error: Invalid type requested, valid types include: uint8-64, int8-64, fn and uniaddress: recieved %v", typeComponents[1])
 		}
