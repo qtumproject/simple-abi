@@ -93,6 +93,7 @@ func (q QFunc) GenHashedFuncIdentifier(contractName string) string {
 	return fmt.Sprintf("0x%x", funcHash[:4])
 }
 
+// GenFuncCallQtum creates a function body for a Qtum Function Call in C
 func (q QFunc) GenFuncCallQtum(contractName string) string {
 	var statement []string
 	// push inputs onto stack

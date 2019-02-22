@@ -1,7 +1,9 @@
 package parser
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/VoR0220/SimpleABI/definitions"
@@ -13,8 +15,35 @@ const (
 	FUNCTION
 )
 
-func Parse(input []byte) (definitions.QInterfaceBuilder, error) {
-	return definitions.QInterfaceBuilder{}, nil
+// Parse opens up a file and returns a QInterfaceBuilder for building of templates
+func Parse(filename string) (definitions.QInterfaceBuilder, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return definitions.QInterfaceBuilder{}, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	var counter int
+	var builtInterface definitions.QInterfaceBuilder
+	for scanner.Scan() {
+		isName, returned, err := parseLine(scanner.Text(), counter)
+		if err != nil {
+			return definitions.QInterfaceBuilder{}, err
+		} else if isName {
+			if builtInterface.ContractName != "" {
+				return definitions.QInterfaceBuilder{}, fmt.Errorf("Attempted to declare multiple names for contract %v. Only one contract name allowed per instance.", builtInterface.ContractName)
+			}
+			builtInterface.ContractName = returned.(string)
+		} else if !isName && returned == nil {
+			continue
+		} else {
+			funcs := builtInterface.Functions
+			builtInterface.Functions = append(funcs, returned.(definitions.QFunc))
+		}
+		counter++
+	}
+	return builtInterface, nil
 }
 
 // parseLine is a function that is used to create an interface builder from a line from a file
