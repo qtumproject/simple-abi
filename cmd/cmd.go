@@ -50,8 +50,6 @@ Current languages available are C but we are adamently working hard at Qtum to a
 			os.Exit(1)
 		}
 
-		nameBase := strings.TrimSuffix(filepath.Base(abiFilename), ".abi")
-
 		if language != "c" {
 			fmt.Printf("Unexpected language %v selected, select one of: c\n", language)
 			os.Exit(1)
@@ -62,6 +60,8 @@ Current languages available are C but we are adamently working hard at Qtum to a
 			fmt.Printf("Error in parsing your abi file: %v\n", err)
 			os.Exit(1)
 		}
+
+		nameBase := strings.TrimSuffix(interfaceBuilder.ContractName, ".abi")
 
 		if encode {
 			name := nameBase + "ABI.c"

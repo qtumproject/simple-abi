@@ -50,7 +50,7 @@ func Parse(filename string) (definitions.QInterfaceBuilder, error) {
 // the first output argument is a boolean to determine whether or not this is a name,
 // the second output argument is an  interface that should be either a string or a qFunc
 func parseLine(input string, number int) (bool, interface{}, error) {
-	if strings.HasPrefix(input, "#") {
+	if strings.HasPrefix(input, "#") || input == "" {
 		// is a comment
 		return false, nil, nil
 	}

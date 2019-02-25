@@ -1,0 +1,4 @@
+# some comment
+
+:name=MuhContract
+xvar:uint16 yvar:int16 muhFunc:fn -> xret:uint32 yret:int64
