@@ -49,8 +49,8 @@ const cEncodingTemplateImpl = `{{ $contractName := .ContractName }}
 {{end}}`
 
 const headerEncodingTemplateImpl = `{{ $contractName := .ContractName }}
-#ifndef {{$contractName-}}ABI_H
-#define {{$contractName-}}ABI_H
+#ifndef {{$contractName}}ABI_H
+#define {{$contractName}}ABI_H
 
 //Function IDs
 {{range .Functions}}#ifndef ID_{{$contractName}}_{{.FuncName}}
@@ -64,8 +64,8 @@ const headerEncodingTemplateImpl = `{{ $contractName := .ContractName }}
 #endif`
 
 const headerDecodingTemplateImpl = `{{ $contractName := .ContractName }}
-#ifndef {{$contractName-}}ABI_H
-#define {{$contractName-}}ABI_H
+#ifndef {{$contractName}}ABI_H
+#define {{$contractName}}ABI_H
 
 //Function IDs
 {{range .Functions}}#ifndef ID_{{$contractName}}_{{.FuncName}}
