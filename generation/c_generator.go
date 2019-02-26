@@ -48,16 +48,69 @@ const cEncodingTemplateImpl = `{{ $contractName := .ContractName }}
 
 {{end}}`
 
+const headerEncodingTemplateImpl = `{{ $contractName := .ContractName }}
+#ifndef {{$contractName-}}ABI_H
+#define {{$contractName-}}ABI_H
+
+//Function IDs
+{{range .Functions}}#ifndef ID_{{$contractName}}_{{.FuncName}}
+#define ID_{{$contractName}}_{{.FuncName}} {{.GenHashedFuncIdentifier $contractName}}
+#endif
+{{end}}
+
+{{range .Functions}}QtumCallResult  {{.GenEncodeFuncSignatureC $contractName}};
+
+{{end}}
+#endif`
+
+const headerDecodingTemplateImpl = `{{ $contractName := .ContractName }}
+#ifndef {{$contractName-}}ABI_H
+#define {{$contractName-}}ABI_H
+
+//Function IDs
+{{range .Functions}}#ifndef ID_{{$contractName}}_{{.FuncName}}
+#define ID_{{$contractName}}_{{.FuncName}} {{.GenHashedFuncIdentifier $contractName}}
+#endif
+{{end}}
+
+void dispatch();
+
+{{range $i, $x := .Functions }}void {{.GenDecodeFuncSignatureC $contractName true}};
+{{end}}
+
+#endif
+`
+
+// TemplateType is an enum used to tell what template the function GenerateTemplate should generate
+type TemplateType int
+
+//EncodeC generates a C encoding template, DecodeC generates a C decoding template and so on and so forth
+const (
+	EncodeC TemplateType = iota
+	DecodeC
+	EncodeH
+	DecodeH
+)
+
 // GenerateTemplate takes in a QInterfaceBuilder, and defines a file for a decoding template to be used
 // to generate a file from
-func GenerateTemplate(builder definitions.QInterfaceBuilder, name string, output io.Writer, encode bool) error {
+func GenerateTemplate(builder definitions.QInterfaceBuilder, name string, output io.Writer, typ TemplateType) error {
 	errMsg := "Error in decode template generation: %v"
 	var toParse string
-	if encode {
+
+	switch typ {
+	case EncodeC:
 		toParse = cEncodingTemplateImpl
-	} else {
+	case DecodeC:
 		toParse = cDecodingTemplateImpl
+	case EncodeH:
+		toParse = headerEncodingTemplateImpl
+	case DecodeH:
+		toParse = headerDecodingTemplateImpl
+	default:
+		panic("invalid type selected")
 	}
+
 	templ, err := template.New(name).Parse(toParse)
 	if err != nil {
 		return fmt.Errorf(errMsg, err)

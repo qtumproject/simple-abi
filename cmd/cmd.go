@@ -64,26 +64,46 @@ Current languages available are C but we are adamently working hard at Qtum to a
 		nameBase := strings.TrimSuffix(interfaceBuilder.ContractName, ".abi")
 
 		if encode {
-			name := nameBase + "ABI.c"
+			cName := nameBase + "ABI.c"
+			hName := nameBase + "ABI.h"
 			var buf bytes.Buffer
-			err := generation.GenerateTemplate(interfaceBuilder, nameBase+"ABI.c", &buf, true)
+			err := generation.GenerateTemplate(interfaceBuilder, nameBase+"ABI.c", &buf, generation.EncodeC)
 			if err != nil {
 				fmt.Printf("Error in encoding template generation: %v\n", err)
 			}
-			err = ioutil.WriteFile(name, buf.Bytes(), 0666)
+			err = ioutil.WriteFile(cName, buf.Bytes(), 0666)
+			if err != nil {
+				fmt.Printf("Error in file creation and writing: %v\n", err)
+			}
+			buf.Reset()
+			err = generation.GenerateTemplate(interfaceBuilder, nameBase+"ABI.h", &buf, generation.EncodeH)
+			if err != nil {
+				fmt.Printf("Error in encoding template generation: %v\n", err)
+			}
+			err = ioutil.WriteFile(hName, buf.Bytes(), 0666)
 			if err != nil {
 				fmt.Printf("Error in file creation and writing: %v\n", err)
 			}
 		}
 
 		if decode {
-			name := nameBase + "Dispatcher.c"
+			cName := nameBase + "Dispatcher.c"
+			hName := nameBase + "Dispatcher.h"
 			var buf bytes.Buffer
-			err := generation.GenerateTemplate(interfaceBuilder, nameBase+"Dispatcher.c", &buf, false)
+			err := generation.GenerateTemplate(interfaceBuilder, nameBase+"Dispatcher.c", &buf, generation.DecodeC)
 			if err != nil {
-				fmt.Printf("Error in encoding template generation: %v\n", err)
+				fmt.Printf("Error in decoding template generation: %v\n", err)
 			}
-			err = ioutil.WriteFile(name, buf.Bytes(), 0666)
+			err = ioutil.WriteFile(cName, buf.Bytes(), 0666)
+			if err != nil {
+				fmt.Printf("Error in file creation and writing: %v\n", err)
+			}
+			buf.Reset()
+			err = generation.GenerateTemplate(interfaceBuilder, nameBase+"Dispatcher.h", &buf, generation.DecodeH)
+			if err != nil {
+				fmt.Printf("Error in decoding template generation: %v\n", err)
+			}
+			err = ioutil.WriteFile(hName, buf.Bytes(), 0666)
 			if err != nil {
 				fmt.Printf("Error in file creation and writing: %v\n", err)
 			}
