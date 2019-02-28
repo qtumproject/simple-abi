@@ -33,6 +33,7 @@ func (q QFunc) GenDecodeFuncSignatureC(contractName string, usePointers bool) st
 	var inputs []string
 	var outputs []string
 	for _, input := range q.Inputs {
+
 		if input.Type == "uniaddress" {
 			inputs = append(inputs, "UniversalAddressABI* "+input.TypeName)
 		} else {
@@ -51,6 +52,17 @@ func (q QFunc) GenDecodeFuncSignatureC(contractName string, usePointers bool) st
 	}
 	full := append(inputs, outputs...)
 	return contractName + "_" + q.FuncName + "(" + strings.Join(full, ", ") + ")"
+}
+
+func (q QFunc) generateFuncCallSignatureC(contractName string) string {
+	var sig []string
+	for _, input := range q.Inputs {
+		sig = append(sig, input.TypeName)
+	}
+	for _, output := range q.Outputs {
+		sig = append(sig, "&"+output.TypeName)
+	}
+	return contractName + "_" + q.FuncName + "(" + strings.Join(sig, ", ") + ");"
 }
 
 // GenEncodeFuncSignatureC could probably be melded together with GenDecodeFuncSignatureC if we make some small changes
@@ -149,10 +161,10 @@ func (q QFunc) GenDispatchCodeC(contractName string) string {
 		}
 	}
 	// append function call
-	statement = append(statement, q.GenDecodeFuncSignatureC(contractName, false))
+	statement = append(statement, q.generateFuncCallSignatureC(contractName))
 	// append push statements for outputs
 	for _, output := range q.Outputs {
-		pushStatement := getQtumPopStatement(output.Type)
+		pushStatement := getQtumPushStatement(output.Type)
 		if output.Type == "uniaddress" {
 			statement = append(statement, pushStatement+"("+output.TypeName+", sizeof(UniversalAddressABI));")
 		} else {

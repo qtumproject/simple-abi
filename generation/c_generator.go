@@ -22,7 +22,7 @@ const cDecodingTemplateImpl = `{{ $contractName := .ContractName }}
 //dispatch code
 void dispatch(){
     uint32_t fn;
-    if(qtumPop(&fn, sizeof(fn) != sizeof(fn)){
+    if(qtumPop(&fn, sizeof(fn) != sizeof(fn))){
         //fallback function/error
     }
     switch(fn){
@@ -32,6 +32,7 @@ void dispatch(){
 	}{{printf "\n\t"}}{{end -}}
 	default:
 		//fallback function / error
+		break;
     }
 }`
 
