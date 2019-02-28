@@ -33,8 +33,8 @@ void dispatch(){
 		    uint8_t somereturn = 0;
 		    int32_t otherreturn = 0;
 		    MyContract_myFunction(uint8_t somevar, int64_t othervar, &somereturn, &otherreturn)
-		    qtumPop8()(somereturn);
-		    qtumPop32()(otherreturn);
+		    qtumPush32(xret);
+			qtumPush64(yret);
 		    break;
 	    }
 	    case ID_MyContract_otherFunction:
@@ -42,7 +42,7 @@ void dispatch(){
 		    uint8_t somevar = qtumPop8();
 		    uint32_t somereturn = 0;
 		    MyContract_otherFunction(uint8_t somevar, &somereturn)
-		    qtumPop32()(somereturn);
+		    qtumPush32(somereturn);
 		    break;
 	    }
 	    default:
@@ -167,7 +167,7 @@ func TestDecodeTemplate1(t *testing.T) {
 			},
 		},
 	}
-	err := GenerateTemplate(builder, "decodeTest1", &b, false)
+	err := GenerateTemplate(builder, "decodeTest1", &b, DecodeC)
 	if err != nil {
 		t.Errorf("Unexpected error in template generation of decodeTest1: %v", err)
 	}
@@ -195,7 +195,7 @@ func TestDecodeTemplate2(t *testing.T) {
 			},
 		},
 	}
-	err := GenerateTemplate(builder, "decodeTest2", &b, false)
+	err := GenerateTemplate(builder, "decodeTest2", &b, DecodeC)
 	if err != nil {
 		t.Errorf("Unexpected error in template generation of decodeTest2: %v", err)
 	}
@@ -233,7 +233,7 @@ func TestEncodeTemplate1(t *testing.T) {
 			},
 		},
 	}
-	err := GenerateTemplate(builder, "encodeTest1", &b, true)
+	err := GenerateTemplate(builder, "encodeTest1", &b, EncodeC)
 	if err != nil {
 		t.Errorf("Unexpected error in template generation of encodeTest1: %v", err)
 	}
@@ -260,7 +260,7 @@ func TestEncodeTemplate2(t *testing.T) {
 			},
 		},
 	}
-	err := GenerateTemplate(builder, "encodeTest2", &b, true)
+	err := GenerateTemplate(builder, "encodeTest2", &b, EncodeC)
 	if err != nil {
 		t.Errorf("Unexpected error in template generation of encodeTest2: %v", err)
 	}
