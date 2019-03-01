@@ -17,7 +17,7 @@ const cDecodingTemplateImpl = `{{ $contractName := .ContractName }}
 {{range .Functions}}#define ID_{{$contractName}}_{{.FuncName}} {{.GenHashedFuncIdentifier $contractName}}
 {{end}}
 //prototypes 
-{{range $i, $x := .Functions }}void {{.GenDecodeFuncSignatureC $contractName true}};
+{{range $i, $x := .Functions }}void {{.GenFuncSignatureC $contractName false}};
 {{end}}
 //dispatch code
 void dispatch(){
@@ -43,7 +43,7 @@ const cEncodingTemplateImpl = `{{ $contractName := .ContractName }}
 //Function IDs
 {{range .Functions}}#define ID_{{$contractName}}_{{.FuncName}} {{.GenHashedFuncIdentifier $contractName}}
 {{end}}
-{{range .Functions}}QtumCallResult  {{.GenEncodeFuncSignatureC $contractName}}{
+{{range .Functions}}QtumCallResult  {{.GenFuncSignatureC $contractName true}}{
 {{.GenFuncCallQtum $contractName}}
 }
 
@@ -59,7 +59,7 @@ const headerEncodingTemplateImpl = `{{ $contractName := .ContractName }}
 #endif
 {{end}}
 
-{{range .Functions}}QtumCallResult  {{.GenEncodeFuncSignatureC $contractName}};
+{{range .Functions}}QtumCallResult  {{.GenFuncSignatureC $contractName true}};
 
 {{end}}
 #endif`
@@ -76,7 +76,7 @@ const headerDecodingTemplateImpl = `{{ $contractName := .ContractName }}
 
 void dispatch();
 
-{{range $i, $x := .Functions }}void {{.GenDecodeFuncSignatureC $contractName true}};
+{{range $i, $x := .Functions }}void {{.GenFuncSignatureC $contractName false}};
 {{end}}
 
 #endif

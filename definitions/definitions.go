@@ -28,46 +28,14 @@ type QType struct {
 	Type     string
 }
 
-// GenDecodeFuncSignatureC generates a function signature for a C translation of the contract function
-func (q QFunc) GenDecodeFuncSignatureC(contractName string, usePointers bool) string {
-	var inputs []string
-	var outputs []string
-	for _, input := range q.Inputs {
+// GenFuncSignatureC generates a function signature to be used in templating. Takes a contract name to complete the function signature
+// and an addCallOpts to prefix the various inputs and outputs with a UniversalAddress __address and QtumCallOptions* __options
+func (q QFunc) GenFuncSignatureC(contractName string, addCallOpts bool) string {
+	var sigInParens []string
 
-		if input.Type == "uniaddress" {
-			inputs = append(inputs, "UniversalAddressABI* "+input.TypeName)
-		} else {
-			inputs = append(inputs, input.Type+"_t "+input.TypeName)
-		}
+	if addCallOpts {
+		sigInParens = append(sigInParens, []string{"UniversalAddress __address", "QtumCallOptions* __options"}...)
 	}
-	for _, output := range q.Outputs {
-		if output.Type == "uniaddress" && usePointers {
-			outputs = append(outputs, "UniversalAddressABI** "+output.TypeName)
-		} else if usePointers {
-			outputs = append(outputs, output.Type+"_t* "+output.TypeName)
-		} else {
-			outputs = append(outputs, "&"+output.TypeName)
-		}
-
-	}
-	full := append(inputs, outputs...)
-	return contractName + "_" + q.FuncName + "(" + strings.Join(full, ", ") + ")"
-}
-
-func (q QFunc) generateFuncCallSignatureC(contractName string) string {
-	var sig []string
-	for _, input := range q.Inputs {
-		sig = append(sig, input.TypeName)
-	}
-	for _, output := range q.Outputs {
-		sig = append(sig, "&"+output.TypeName)
-	}
-	return contractName + "_" + q.FuncName + "(" + strings.Join(sig, ", ") + ");"
-}
-
-// GenEncodeFuncSignatureC could probably be melded together with GenDecodeFuncSignatureC if we make some small changes
-func (q QFunc) GenEncodeFuncSignatureC(contractName string) string {
-	sigInParens := []string{"UniversalAddress __address", "QtumCallOptions* __options"}
 	for _, input := range q.Inputs {
 		if input.Type == "uniaddress" {
 			sigInParens = append(sigInParens, "UniversalAddressABI* "+input.TypeName)
@@ -85,6 +53,17 @@ func (q QFunc) GenEncodeFuncSignatureC(contractName string) string {
 	}
 
 	return contractName + "_" + q.FuncName + "(" + strings.Join(sigInParens, ", ") + ")"
+}
+
+func (q QFunc) generateFuncCallSignatureC(contractName string) string {
+	var sig []string
+	for _, input := range q.Inputs {
+		sig = append(sig, input.TypeName)
+	}
+	for _, output := range q.Outputs {
+		sig = append(sig, "&"+output.TypeName)
+	}
+	return contractName + "_" + q.FuncName + "(" + strings.Join(sig, ", ") + ");"
 }
 
 // GenHashedFuncIdentifier generates a hashed function identifier from a function signature
