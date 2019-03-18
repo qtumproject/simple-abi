@@ -1,4 +1,6 @@
 # some comment
 
 :name=MuhContract
+:implements=Test2,Test3
 xvar:uint16 yvar:int16 muhFunc:fn -> xret:uint32 yret:int64
+xvar:uint16[] yvar:int32[] muhArrz:fn -> xret:uniaddress[]
