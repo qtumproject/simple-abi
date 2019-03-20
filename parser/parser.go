@@ -41,44 +41,33 @@ func Parse(filename string) (definitions.QInterfaceBuilder, error) {
 			}
 			builtInterface.ContractName = returned.(string)
 		case functionComponent:
-			funcs := builtInterface.Functions
-			builtInterface.Functions = append(funcs, returned.(definitions.QFunc))
+			builtInterface.Functions = append(builtInterface.Functions, returned.(definitions.QFunc))
 		case commentComponent:
 			continue
 		case errorComponent:
 			return definitions.QInterfaceBuilder{}, err
 		case interfaceComponent:
 			interfaceFilenames := strings.Split(returned.(string), ",")
-			fmt.Printf("interfaceFilenames: %v\n", interfaceFilenames)
-			qFuncSet := make(map[definitions.QFunc]bool)
+			qFuncSet := make(map[string]definitions.QFunc)
 			for _, interFilename := range interfaceFilenames {
-				if innerBuiltInterface, err := Parse(interFilename + ".abi"); err != nil {
+				innerBuiltInterface, err := Parse(interFilename + ".abi")
+				if err != nil {
 					return definitions.QInterfaceBuilder{}, err
-				} else {
-					fmt.Printf("innerBuiltInterface: %v\n", innerBuiltInterface)
-					for _, val := range innerBuiltInterface.Functions {
-						fmt.Printf("qFunc value inside loop: %v\n", val)
-						if _, exists := qFuncSet[&val]; exists == true {
-							fmt.Printf("hit the exist\n")
-							continue
-						} else {
-							fmt.Printf("hit the true\n")
-							qFuncSet[&val] = true
-						}
-					}
+				}
+				for _, val := range innerBuiltInterface.Functions {
+					qFuncSet[val.FuncName] = val
 				}
 			}
-			fmt.Printf("Ending parse and applying map endings for interface filenames: %v\n", interfaceFilenames)
-			for x := range qFuncSet {
-				fmt.Printf("value in qFuncSet: %v\n", *x)
-				builtInterface.Functions = append(builtInterface.Functions, *x)
+			for _, y := range qFuncSet {
+				builtInterface.Functions = append(builtInterface.Functions, y)
 			}
 		}
 		counter++
 	}
-	fmt.Printf("Ending builtInterface value: %v\n\n", builtInterface)
 	return builtInterface, nil
 }
+
+//func parseInterfacesInFilepaths(pathMap)
 
 // parseLine is a function that is used to create an interface builder from a line from a file
 // the first output argument is a boolean to determine whether or not this is a name,
