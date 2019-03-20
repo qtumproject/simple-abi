@@ -1,0 +1,3 @@
+:name=Test2Contract
+:implements=Test4
+avar:uint8 bvar:int8 cvar:uniaddress test2Func:fn -> areturn:int8

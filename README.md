@@ -17,4 +17,4 @@ After that we call our CLI command from the same directory as `Coins.abi`. We ca
 
 `simpleabi --abi Coins.abi --decode --encode`
 
-This will generate a pair of files for decoding contract interactions and a pair of files for encodinng contract interactions specifically designed to interact with the qtum library. 
+This will generate a pair of files for decoding contract interactions ('CoinsDispatcher.c', 'CoinsDispatcher.h') and a pair of files for encodinng contract ('CoinsABI.c', 'CoinsABI.h') interactions specifically designed to interact with the qtum library. 

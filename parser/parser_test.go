@@ -18,12 +18,25 @@ func TestParseName(t *testing.T) {
 		t.Fatalf("Unexpected error occurred: %v", err)
 	}
 
-	if isName == false {
+	if isName != nameComponent {
 		t.Errorf("Expected to receive a name but did not")
 	}
 
 	if name.(string) != "AirDropToken" {
 		t.Errorf("Expected name %v but got %v", "AirDropToken", name)
+	}
+}
+
+func TestParseImplementsInterface(t *testing.T) {
+	const exampleFileInputLine = `:implements=ERC20, ERC721`
+
+	_, interfac, err := parseLine(exampleFileInputLine, 0)
+	if err != nil {
+		t.Fatalf("Unexpected error occurred: %v", err)
+	}
+
+	if interfac.(string) != "ERC20, ERC721" {
+		t.Errorf("Expected interface %v but got %v", "ERC20, ERC721", interfac)
 	}
 }
 
@@ -72,6 +85,10 @@ func TestParseFunction(t *testing.T) {
 		{
 			"addressvar:uniaddress someFunction:fn -> addressreturn:uniaddress",
 			def.QFunc{FuncName: "someFunction", Inputs: []def.QType{def.QType{TypeName: "addressvar", Type: "uniaddress"}}, Outputs: []def.QType{def.QType{TypeName: "addressreturn", Type: "uniaddress"}}},
+		},
+		{
+			"addressarray:uniaddress[] intarray:int64[] arrFunction:fn -> uintarray:uint32[]",
+			def.QFunc{FuncName: "arrFunction", Inputs: []def.QType{def.QType{TypeName: "addressarray", Type: "uniaddress[]"}, def.QType{TypeName: "intarray", Type: "int64[]"}}, Outputs: []def.QType{def.QType{TypeName: "uintarray", Type: "uint32[]"}}},
 		},
 	}
 

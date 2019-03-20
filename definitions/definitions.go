@@ -37,7 +37,10 @@ func (q QFunc) GenFuncSignatureC(contractName string, addCallOpts bool) string {
 		sigInParens = append(sigInParens, []string{"UniversalAddress __address", "QtumCallOptions* __options"}...)
 	}
 	for _, input := range q.Inputs {
-		if input.Type == "uniaddress" {
+		if isArray(input.Type) {
+			sigInParens = append(sigInParens, getBaseType(input.Type)+"_t* "+input.TypeName)
+			sigInParens = append(sigInParens, "size_t "+input.TypeName+"_sz")
+		} else if input.Type == "uniaddress" {
 			sigInParens = append(sigInParens, "UniversalAddressABI* "+input.TypeName)
 		} else {
 			sigInParens = append(sigInParens, input.Type+"_t "+input.TypeName)
@@ -45,7 +48,10 @@ func (q QFunc) GenFuncSignatureC(contractName string, addCallOpts bool) string {
 	}
 
 	for _, output := range q.Outputs {
-		if output.Type == "uniaddress" {
+		if isArray(output.Type) {
+			sigInParens = append(sigInParens, getBaseType(output.Type)+"_t** "+output.TypeName)
+			sigInParens = append(sigInParens, "size_t* "+output.TypeName+"_sz")
+		} else if output.Type == "uniaddress" {
 			sigInParens = append(sigInParens, "UniversalAddressABI** "+output.TypeName)
 		} else {
 			sigInParens = append(sigInParens, output.Type+"_t* "+output.TypeName)
@@ -89,10 +95,17 @@ func (q QFunc) GenFuncCallQtum(contractName string) string {
 	var statement []string
 	// push inputs onto stack
 	for i, input := range q.Inputs {
-		if i == 0 {
-			statement = append(statement, "\t"+getQtumPushStatement(input.Type)+"("+input.TypeName+");")
+		var pushStatement string
+		if isArray(input.Type) {
+			pushStatement = getQtumPushStatement(input.Type) + "(" + input.TypeName + ", " + input.TypeName + "_sz);"
 		} else {
-			statement = append(statement, getQtumPushStatement(input.Type)+"("+input.TypeName+");")
+			pushStatement = getQtumPushStatement(input.Type) + "(" + input.TypeName + ");"
+		}
+
+		if i == 0 {
+			statement = append(statement, "\t"+pushStatement)
+		} else {
+			statement = append(statement, pushStatement)
 		}
 	}
 	statement = append(statement, getQtumPushStatement("int32")+"(ID_"+contractName+"_"+q.FuncName+");")
@@ -100,22 +113,36 @@ func (q QFunc) GenFuncCallQtum(contractName string) string {
 	statement = append(statement, "if(r.error == QTUM_CALL_SUCCESS){")
 
 	for _, output := range q.Outputs {
-		if output.Type == "uniaddress" {
-			statement = append(statement, "\tif("+output.TypeName+" == NULL){")
-			statement = append(statement, "\t\t"+output.TypeName+" = malloc(sizeof(UniversalAddressABI));")
-			statement = append(statement, "\t}")
-			statement = append(statement, "\tif("+output.TypeName+" == NULL){")
-			statement = append(statement, "\t\tqtumErase();")
-			statement = append(statement, "\t}else{")
-			statement = append(statement, "\t\tqtumPop("+output.TypeName+", sizeof(UniversalAddressABI));")
-			statement = append(statement, "\t}")
-		} else {
-			statement = append(statement, "\t*"+output.TypeName+" = "+getQtumPopStatement(output.Type)+";")
-		}
+		statement = append(statement, output.generateFuncCallBody()...)
 	}
 	statement = append(statement, "}")
 	statement = append(statement, "return r;")
 	return strings.Join(statement, "\n\t")
+}
+
+func (typ QType) generateFuncCallBody() []string {
+	switch {
+	case isArray(typ.Type):
+		return []string{
+			fmt.Sprintf("\t*%v_sz = qtumItemSize();", typ.TypeName),
+			fmt.Sprintf("\t*%v = malloc(*%v_sz * sizeof(**%v));", typ.TypeName, typ.TypeName, typ.TypeName),
+			fmt.Sprintf("\t%v(*%v, *%v_sz * sizeof(**%v));", getQtumPopStatement(typ.Type), typ.TypeName, typ.TypeName, typ.TypeName),
+			fmt.Sprintf("\t*%v_sz /= sizeof(**%v);", typ.TypeName, typ.TypeName),
+		}
+	case typ.Type == "uniaddress":
+		return []string{
+			fmt.Sprintf("\tif(%v == NULL){", typ.TypeName),
+			fmt.Sprintf("\t\t%v = malloc(sizeof(UniversalAddressABI));", typ.TypeName),
+			"\t}",
+			fmt.Sprintf("\tif(%v == NULL){", typ.TypeName),
+			"\t\tqtumErase();",
+			"\t}else{",
+			fmt.Sprintf("\t\tqtumPop(%v, sizeof(UniversalAddressABI));", typ.TypeName),
+			"\t}",
+		}
+	default:
+		return []string{fmt.Sprintf("\t*%v = %v;", typ.TypeName, getQtumPopStatement(typ.Type))}
+	}
 }
 
 //GenDispatchCodeC generates the dispatch code for the template in C
@@ -124,7 +151,12 @@ func (q QFunc) GenDispatchCodeC(contractName string) string {
 	// Pop off inputs
 	for _, input := range q.Inputs {
 		popStatement := getQtumPopStatement(input.Type)
-		if input.Type == "uniaddress" {
+		if isArray(input.Type) {
+			statement = append(statement, getBaseType(input.Type)+"_t* "+input.TypeName+";")
+			statement = append(statement, "size_t "+input.TypeName+"_sz = qtumItemSize();")
+			statement = append(statement, input.TypeName+" = malloc("+input.TypeName+"_sz);")
+			statement = append(statement, popStatement+"("+input.TypeName+", "+input.TypeName+"_sz);")
+		} else if input.Type == "uniaddress" {
 			statement = append(statement, "UniversalAddressABI* "+input.TypeName+" = malloc(sizeof(UniversalAddressABI));")
 			statement = append(statement, popStatement+"("+input.TypeName+", sizeof(UniversalAddressABI));")
 		} else {
@@ -133,7 +165,10 @@ func (q QFunc) GenDispatchCodeC(contractName string) string {
 	}
 	// Declare types with assigned null values
 	for _, output := range q.Outputs {
-		if output.Type == "uniaddress" {
+		if isArray(output.Type) {
+			statement = append(statement, output.Type+"_t* "+output.TypeName+" = NULL;")
+			statement = append(statement, "size_t "+output.TypeName+"_sz;")
+		} else if output.Type == "uniaddress" {
 			statement = append(statement, "UniversalAddressABI* "+output.TypeName+" = NULL;")
 		} else {
 			statement = append(statement, output.Type+"_t "+output.TypeName+" = 0;")
@@ -144,7 +179,9 @@ func (q QFunc) GenDispatchCodeC(contractName string) string {
 	// append push statements for outputs
 	for _, output := range q.Outputs {
 		pushStatement := getQtumPushStatement(output.Type)
-		if output.Type == "uniaddress" {
+		if isArray(output.Type) {
+			statement = append(statement, pushStatement+"("+output.TypeName+", "+output.TypeName+"_sz * sizeof(*"+output.TypeName+"));")
+		} else if output.Type == "uniaddress" {
 			statement = append(statement, pushStatement+"("+output.TypeName+", sizeof(UniversalAddressABI));")
 		} else {
 			statement = append(statement, pushStatement+"("+output.TypeName+");")
@@ -182,6 +219,14 @@ func getQtumPopStatement(typ string) string {
 	case "uniaddress":
 		return "qtumPopExact"
 	default:
-		panic("invalid type string requested")
+		return "qtumPop"
 	}
+}
+
+func isArray(typ string) bool {
+	return strings.HasSuffix(typ, "[]")
+}
+
+func getBaseType(typ string) string {
+	return strings.TrimSuffix(typ, "[]")
 }

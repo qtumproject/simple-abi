@@ -1,0 +1,3 @@
+:name=Test3Contract
+:implements=Test4
+dvar:uint8 evar:int8 fvar:uniaddress test3Func:fn -> freturn:int8
