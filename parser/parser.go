@@ -101,10 +101,7 @@ func implementInterface(qFuncSet map[string]definitions.QFunc, interfaceField st
 		}
 		for _, val := range innerBuiltInterface.Functions {
 			if _, exists := qFuncSet[val.FuncName]; !exists {
-				fmt.Printf("How is this working: %v\n", val.FuncName)
 				qFuncSet[val.FuncName] = val
-			} else {
-				fmt.Printf("Confirming that this does indeed work\n")
 			}
 		}
 	}
@@ -120,7 +117,7 @@ func getInterfaceLocation(abiFile string) (string, error) {
 		startIndex = strings.Index(abiFile, "(")
 		endIndex = strings.Index(abiFile, ")")
 	}
-	fmt.Printf("startIndex: %v, endIndex: %v\n", startIndex, endIndex)
+
 	if startIndex == 0 && endIndex == 0 {
 		return abiFile + ".abi", nil
 	} else if (startIndex == -1 && endIndex != -1) || (startIndex != -1 && endIndex == -1) || (endIndex < startIndex) {
@@ -146,9 +143,8 @@ func validateURL(location string) (string, bool, error) {
 	if err != nil {
 		return "", false, err
 	}
-	fmt.Printf("absPath: %v\n", absPath)
-	return absPath, false, nil
 
+	return absPath, false, nil
 }
 
 // parseLine is a function that is used to create an interface builder from a line from a file
@@ -207,7 +203,12 @@ func parseFunction(input string, number int) (definitions.QFunc, error) {
 		return definitions.QFunc{}, err
 	}
 
-	name, left, err = getNameFromFunc(left)
+	name, left, mods, err := getNameAndModsFromFunc(left)
+	if err != nil {
+		return definitions.QFunc{}, err
+	}
+
+	payable, err := validateMods(mods)
 	if err != nil {
 		return definitions.QFunc{}, err
 	}
@@ -222,32 +223,52 @@ func parseFunction(input string, number int) (definitions.QFunc, error) {
 		return definitions.QFunc{}, err
 	}
 
-	return definitions.QFunc{FuncName: name, Inputs: inputs, Outputs: outputs}, nil
+	return definitions.QFunc{FuncName: name, Inputs: inputs, Outputs: outputs, Payable: payable}, nil
 }
 
-func getNameFromFunc(input string) (string, string, error) {
+// this is to be expanded in the future to encompass further modifiers
+func validateMods(mods []string) (bool, error) {
+	if len(mods) == 0 {
+		return false, nil
+	}
+	// only doing payable now
+	if len(mods) > 1 {
+		return false, fmt.Errorf("parser error: more modifiers called than currently supported")
+	}
+	if mods[0] == "payable" {
+		return true, nil
+	}
+	// assume non payable
+	return false, nil
+}
+
+func getNameAndModsFromFunc(input string) (string, string, []string, error) {
 	var name string
 	var nameFound bool
 	var nameIndex int
+	var modifiers []string
 
 	types := strings.Split(input, " ")
 	for i, typ := range types {
 		typeComponents := strings.Split(typ, ":")
 		if typeComponents[1] == "fn" {
 			if nameFound == true {
-				return "", "", fmt.Errorf("Numerous fn declarations in one function signature")
+				return "", "", []string{}, fmt.Errorf("parser error: numerous fn declarations in one function signature")
 			}
 			nameFound = true
 			name = typeComponents[0]
 			nameIndex = i
+			if len(typeComponents) > 2 {
+				modifiers = typeComponents[2:]
+			}
 		}
 	}
 
 	if name == "" {
-		return "", "", fmt.Errorf("parser error: No function name defined in the function signature")
+		return "", "", []string{}, fmt.Errorf("parser error: No function name defined in the function signature")
 	}
 	// return the name and cut out the name
-	return name, strings.Join(append(types[:nameIndex], types[nameIndex+1:]...), " "), nil
+	return name, strings.Join(append(types[:nameIndex], types[nameIndex+1:]...), " "), modifiers, nil
 }
 
 func gatherTypes(input string) ([]definitions.QType, error) {
@@ -269,7 +290,7 @@ func validateAndSplitFunc(input string) (string, string, error) {
 	functionGroup := strings.Split(input, "->")
 
 	if len(functionGroup) > 2 {
-		return "", "", fmt.Errorf("Unexpected multiple \"->\"s in function signature")
+		return "", "", fmt.Errorf("parser error: unexpected multiple \"->\"s in function signature")
 	}
 	leftString := strings.TrimLeft(strings.TrimRight(functionGroup[0], " "), " ")
 	rightString := strings.TrimRight(strings.TrimLeft(functionGroup[1], " "), " ")

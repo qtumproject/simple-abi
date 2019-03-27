@@ -19,6 +19,7 @@ type QFunc struct {
 	FuncName string
 	Inputs   []QType
 	Outputs  []QType
+	Payable  bool
 }
 
 // QType is a helper type for better code generation of inputs and outputs.
@@ -93,6 +94,11 @@ func (q QFunc) GenHashedFuncIdentifier(contractName string) string {
 // GenFuncCallQtum creates a function body for a Qtum Function Call in C
 func (q QFunc) GenFuncCallQtum(contractName string) string {
 	var statement []string
+	if !q.Payable {
+		statement = append(statement, "if(__options->value > 0) {")
+		statement = append(statement, "\tqtumError(\"nonpayable function\");")
+		statement = append(statement, "}")
+	}
 	// push inputs onto stack
 	for i, input := range q.Inputs {
 		var pushStatement string
@@ -148,6 +154,11 @@ func (typ QType) generateFuncCallBody() []string {
 //GenDispatchCodeC generates the dispatch code for the template in C
 func (q QFunc) GenDispatchCodeC(contractName string) string {
 	var statement []string
+	if !q.Payable {
+		statement = append(statement, "if(qtumExec->value > 0) {")
+		statement = append(statement, "\tqtumError(\"nonpayable function\");")
+		statement = append(statement, "}")
+	}
 	// Pop off inputs
 	for _, input := range q.Inputs {
 		popStatement := getQtumPopStatement(input.Type)
