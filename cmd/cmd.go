@@ -55,7 +55,7 @@ Current languages available are C but we are adamently working hard at Qtum to a
 			os.Exit(1)
 		}
 
-		interfaceBuilder, err := parser.Parse(abiFilename)
+		interfaceBuilder, err := parser.Parse(abiFilename, false)
 		if err != nil {
 			fmt.Printf("Error in parsing your abi file: %v\n", err)
 			os.Exit(1)

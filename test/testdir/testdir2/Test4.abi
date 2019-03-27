@@ -1,2 +1,3 @@
 :name=Test4Contract
+:implements=Test5(https://raw.githubusercontent.com/VoR0220/SimpleABI/master/test/Test5.abi)
 test4var:uniaddress testAmount:uint64 test4Func:fn -> testReturn:uint64
