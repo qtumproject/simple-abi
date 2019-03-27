@@ -31,7 +31,7 @@ func Parse(filename string) (definitions.QInterfaceBuilder, error) {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-
+	qFuncSet := make(map[string]definitions.QFunc)
 	var counter int
 	var builtInterface definitions.QInterfaceBuilder
 	for scanner.Scan() {
@@ -49,20 +49,21 @@ func Parse(filename string) (definitions.QInterfaceBuilder, error) {
 		case errorComponent:
 			return definitions.QInterfaceBuilder{}, err
 		case interfaceComponent:
-			err := implementInterface(&builtInterface, returned.(string))
-			fmt.Printf("End implementInterface builder: %v\n", builtInterface)
+			err := implementInterface(qFuncSet, returned.(string))
 			if err != nil {
 				return definitions.QInterfaceBuilder{}, err
 			}
 		}
 		counter++
 	}
+	for _, y := range qFuncSet {
+		builtInterface.Functions = append(builtInterface.Functions, y)
+	}
 	return builtInterface, nil
 }
 
-func implementInterface(builtInterface *definitions.QInterfaceBuilder, interfaceField string) error {
+func implementInterface(qFuncSet map[string]definitions.QFunc, interfaceField string) error {
 	interfaceFilenames := strings.Split(interfaceField, ",")
-	qFuncSet := make(map[string]definitions.QFunc)
 	for _, interFilename := range interfaceFilenames {
 		location, err := getInterfaceLocation(interFilename)
 		if err != nil {
@@ -88,14 +89,14 @@ func implementInterface(builtInterface *definitions.QInterfaceBuilder, interface
 		}
 		for _, val := range innerBuiltInterface.Functions {
 			if _, exists := qFuncSet[val.FuncName]; !exists {
+				fmt.Printf("How is this working: %v\n", val.FuncName)
 				qFuncSet[val.FuncName] = val
+			} else {
+				fmt.Printf("Confirming that this does indeed work\n")
 			}
 		}
 	}
-	for x, y := range qFuncSet {
-		builtInterface.Functions = append(builtInterface.Functions, y)
-		fmt.Printf("Got x: %v, y: %v\n", x, y)
-	}
+
 	fmt.Printf("End statement\n")
 	return nil
 }
@@ -106,7 +107,6 @@ func getInterfaceLocation(abiFile string) (string, error) {
 	if strings.ContainsAny(abiFile, "()") {
 		startIndex = strings.Index(abiFile, "(")
 		endIndex = strings.Index(abiFile, ")")
-		fmt.Printf("Are we hitting here: %v\n", abiFile)
 	}
 	fmt.Printf("startIndex: %v, endIndex: %v\n", startIndex, endIndex)
 	if startIndex == 0 && endIndex == 0 {
