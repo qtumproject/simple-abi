@@ -3,6 +3,7 @@ package parser
 import (
 	"bufio"
 	"fmt"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -23,14 +24,25 @@ const (
 )
 
 // Parse opens up a file and returns a QInterfaceBuilder for building of templates
-func Parse(filename string) (definitions.QInterfaceBuilder, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return definitions.QInterfaceBuilder{}, err
+func Parse(location string, isURL bool) (definitions.QInterfaceBuilder, error) {
+	var scanner *bufio.Scanner
+	if isURL {
+		response, err := http.Get(location)
+		if err != nil {
+			return definitions.QInterfaceBuilder{}, err
+		} else {
+			defer response.Body.Close()
+			scanner = bufio.NewScanner(response.Body)
+		}
+	} else {
+		file, err := os.Open(location)
+		if err != nil {
+			return definitions.QInterfaceBuilder{}, err
+		}
+		defer file.Close()
+		scanner = bufio.NewScanner(file)
 	}
-	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
 	qFuncSet := make(map[string]definitions.QFunc)
 	var counter int
 	var builtInterface definitions.QInterfaceBuilder
@@ -45,6 +57,7 @@ func Parse(filename string) (definitions.QInterfaceBuilder, error) {
 		case functionComponent:
 			builtInterface.Functions = append(builtInterface.Functions, returned.(definitions.QFunc))
 		case commentComponent:
+			counter++
 			continue
 		case errorComponent:
 			return definitions.QInterfaceBuilder{}, err
@@ -65,6 +78,7 @@ func Parse(filename string) (definitions.QInterfaceBuilder, error) {
 func implementInterface(qFuncSet map[string]definitions.QFunc, interfaceField string) error {
 	interfaceFilenames := strings.Split(interfaceField, ",")
 	for _, interFilename := range interfaceFilenames {
+
 		location, err := getInterfaceLocation(interFilename)
 		if err != nil {
 			return err
@@ -73,9 +87,7 @@ func implementInterface(qFuncSet map[string]definitions.QFunc, interfaceField st
 		if err != nil {
 			return err
 		}
-		if isURL {
-			//do stuff later
-		} else {
+		if !isURL {
 			currentDir, _ := os.Getwd()
 			err = os.Chdir(filepath.Dir(validatedLocation))
 			if err != nil {
@@ -83,7 +95,7 @@ func implementInterface(qFuncSet map[string]definitions.QFunc, interfaceField st
 			}
 			defer os.Chdir(currentDir)
 		}
-		innerBuiltInterface, err := Parse(validatedLocation)
+		innerBuiltInterface, err := Parse(validatedLocation, isURL)
 		if err != nil {
 			return err
 		}
