@@ -3,7 +3,10 @@ package parser
 import (
 	"bufio"
 	"fmt"
+	"net/http"
+	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/VoR0220/SimpleABI/definitions"
@@ -21,15 +24,26 @@ const (
 )
 
 // Parse opens up a file and returns a QInterfaceBuilder for building of templates
-func Parse(filename string) (definitions.QInterfaceBuilder, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		return definitions.QInterfaceBuilder{}, err
+func Parse(location string, isURL bool) (definitions.QInterfaceBuilder, error) {
+	var scanner *bufio.Scanner
+	if isURL {
+		response, err := http.Get(location)
+		if err != nil {
+			return definitions.QInterfaceBuilder{}, err
+		} else {
+			defer response.Body.Close()
+			scanner = bufio.NewScanner(response.Body)
+		}
+	} else {
+		file, err := os.Open(location)
+		if err != nil {
+			return definitions.QInterfaceBuilder{}, err
+		}
+		defer file.Close()
+		scanner = bufio.NewScanner(file)
 	}
-	defer file.Close()
 
-	scanner := bufio.NewScanner(file)
-
+	qFuncSet := make(map[string]definitions.QFunc)
 	var counter int
 	var builtInterface definitions.QInterfaceBuilder
 	for scanner.Scan() {
@@ -43,31 +57,99 @@ func Parse(filename string) (definitions.QInterfaceBuilder, error) {
 		case functionComponent:
 			builtInterface.Functions = append(builtInterface.Functions, returned.(definitions.QFunc))
 		case commentComponent:
+			counter++
 			continue
 		case errorComponent:
 			return definitions.QInterfaceBuilder{}, err
 		case interfaceComponent:
-			interfaceFilenames := strings.Split(returned.(string), ",")
-			qFuncSet := make(map[string]definitions.QFunc)
-			for _, interFilename := range interfaceFilenames {
-				innerBuiltInterface, err := Parse(interFilename + ".abi")
-				if err != nil {
-					return definitions.QInterfaceBuilder{}, err
-				}
-				for _, val := range innerBuiltInterface.Functions {
-					qFuncSet[val.FuncName] = val
-				}
-			}
-			for _, y := range qFuncSet {
-				builtInterface.Functions = append(builtInterface.Functions, y)
+			err := implementInterface(qFuncSet, returned.(string))
+			if err != nil {
+				return definitions.QInterfaceBuilder{}, err
 			}
 		}
 		counter++
 	}
+	for _, y := range qFuncSet {
+		builtInterface.Functions = append(builtInterface.Functions, y)
+	}
 	return builtInterface, nil
 }
 
-//func parseInterfacesInFilepaths(pathMap)
+func implementInterface(qFuncSet map[string]definitions.QFunc, interfaceField string) error {
+	interfaceFilenames := strings.Split(interfaceField, ",")
+	for _, interFilename := range interfaceFilenames {
+
+		location, err := getInterfaceLocation(interFilename)
+		if err != nil {
+			return err
+		}
+		validatedLocation, isURL, err := validateURL(location)
+		if err != nil {
+			return err
+		}
+		if !isURL {
+			currentDir, _ := os.Getwd()
+			err = os.Chdir(filepath.Dir(validatedLocation))
+			if err != nil {
+				return err
+			}
+			defer os.Chdir(currentDir)
+		}
+		innerBuiltInterface, err := Parse(validatedLocation, isURL)
+		if err != nil {
+			return err
+		}
+		for _, val := range innerBuiltInterface.Functions {
+			if _, exists := qFuncSet[val.FuncName]; !exists {
+				fmt.Printf("How is this working: %v\n", val.FuncName)
+				qFuncSet[val.FuncName] = val
+			} else {
+				fmt.Printf("Confirming that this does indeed work\n")
+			}
+		}
+	}
+
+	fmt.Printf("End statement\n")
+	return nil
+}
+
+func getInterfaceLocation(abiFile string) (string, error) {
+	var startIndex int
+	var endIndex int
+	if strings.ContainsAny(abiFile, "()") {
+		startIndex = strings.Index(abiFile, "(")
+		endIndex = strings.Index(abiFile, ")")
+	}
+	fmt.Printf("startIndex: %v, endIndex: %v\n", startIndex, endIndex)
+	if startIndex == 0 && endIndex == 0 {
+		return abiFile + ".abi", nil
+	} else if (startIndex == -1 && endIndex != -1) || (startIndex != -1 && endIndex == -1) || (endIndex < startIndex) {
+		return "", fmt.Errorf("Invalid formatting of interface location url: should be formatted as \"(myUrl/located/here.com)\"")
+	} else {
+		fmt.Printf("%v\n", abiFile[startIndex+1:endIndex])
+		return abiFile[startIndex+1 : endIndex], nil
+	}
+}
+
+func validateURL(location string) (string, bool, error) {
+	ourURL, err := url.Parse(location)
+	if err != nil {
+		return "", false, err
+	}
+	if ourURL.IsAbs() {
+		if ourURL.Scheme != "http" && ourURL.Scheme != "https" {
+			return "", false, fmt.Errorf("schemes outside of http/https are not supported")
+		}
+		return ourURL.String(), true, nil
+	}
+	absPath, err := filepath.Abs(ourURL.Path)
+	if err != nil {
+		return "", false, err
+	}
+	fmt.Printf("absPath: %v\n", absPath)
+	return absPath, false, nil
+
+}
 
 // parseLine is a function that is used to create an interface builder from a line from a file
 // the first output argument is a boolean to determine whether or not this is a name,
