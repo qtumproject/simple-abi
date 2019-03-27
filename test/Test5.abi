@@ -1,2 +1,2 @@
 :name=Test5Contract
-get:uint8 on:uint16 my:uint32 level:uint64 test5Func:fn -> b:int8 lasagna:int16
+get:uint8 on:uint16 my:uint32 level:uint64 test5Func:fn -> b:int8 lasagna:int16 please:int32
