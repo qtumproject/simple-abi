@@ -1,6 +1,7 @@
 # some comment
 
 :name=MuhContract
-:implements=Test2,Test3
+:implements=Test2(/Users/vor0220/go-projects/src/github.com/VoR0220/SimpleABI/test/testdir/Test2.abi)
+:implements=Test3
 xvar:uint16 yvar:int16 muhFunc:fn -> xret:uint32 yret:int64
 xvar:uint16[] yvar:int32[] muhArrz:fn -> xret:uniaddress[]

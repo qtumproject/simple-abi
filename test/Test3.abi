@@ -1,3 +1,3 @@
 :name=Test3Contract
-:implements=Test4
+:implements=Test4(./testdir/testdir2/Test4.abi)
 dvar:uint8 evar:int8 fvar:uniaddress test3Func:fn -> freturn:int8
