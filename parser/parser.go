@@ -251,7 +251,7 @@ func getNameAndModsFromFunc(input string) (string, string, []string, error) {
 	types := strings.Split(input, " ")
 	for i, typ := range types {
 		typeComponents := strings.Split(typ, ":")
-		if typeComponents[1] == "fn" {
+		if len(typeComponents) > 1 && typeComponents[1] == "fn" {
 			if nameFound == true {
 				return "", "", []string{}, fmt.Errorf("parser error: numerous fn declarations in one function signature")
 			}
