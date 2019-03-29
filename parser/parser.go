@@ -273,10 +273,19 @@ func getNameAndModsFromFunc(input string) (string, string, []string, error) {
 
 func gatherTypes(input string) ([]definitions.QType, error) {
 	var maTypez []definitions.QType
-	for _, typ := range strings.Split(input, " ") {
+	inputs := strings.Split(input, " ")
+	for _, typ := range inputs {
 		typeComponents := strings.Split(typ, ":")
 		if len(typeComponents) > 2 {
 			return nil, fmt.Errorf("parser error: Invalid formatting of output component \"%v\": needs to be formatted as name:type", typ)
+		} else if len(typeComponents) == 1 {
+			if typeComponents[0] == "void" {
+				if len(inputs) > 1 {
+					return nil, fmt.Errorf("parser error: Type void present in signature with other defined types")
+				}
+				return nil, nil
+			}
+			return nil, fmt.Errorf("parser error: invalid type declaration %v", typeComponents[0])
 		} else if isValidArray(typeComponents[1]) || isValidBaseType(typeComponents[1]) {
 			maTypez = append(maTypez, definitions.QType{TypeName: typeComponents[0], Type: typeComponents[1]})
 		} else {
