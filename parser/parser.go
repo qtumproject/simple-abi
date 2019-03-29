@@ -105,8 +105,6 @@ func implementInterface(qFuncSet map[string]definitions.QFunc, interfaceField st
 			}
 		}
 	}
-
-	fmt.Printf("End statement\n")
 	return nil
 }
 
@@ -123,7 +121,6 @@ func getInterfaceLocation(abiFile string) (string, error) {
 	} else if (startIndex == -1 && endIndex != -1) || (startIndex != -1 && endIndex == -1) || (endIndex < startIndex) {
 		return "", fmt.Errorf("Invalid formatting of interface location url: should be formatted as \"(myUrl/located/here.com)\"")
 	} else {
-		fmt.Printf("%v\n", abiFile[startIndex+1:endIndex])
 		return abiFile[startIndex+1 : endIndex], nil
 	}
 }
