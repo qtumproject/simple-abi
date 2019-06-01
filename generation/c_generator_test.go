@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"testing"
 
-	def "github.com/VoR0220/SimpleABI/definitions"
+	def "github.com/qtumproject/SimpleABI/definitions"
 )
 
 const decodeTest1 = `

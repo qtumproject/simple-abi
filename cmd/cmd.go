@@ -8,8 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/VoR0220/SimpleABI/generation"
-	"github.com/VoR0220/SimpleABI/parser"
+	"github.com/qtumproject/SimpleABI/datagen"
+	"github.com/qtumproject/SimpleABI/generation"
+	"github.com/qtumproject/SimpleABI/parser"
 
 	"github.com/spf13/cobra"
 )
@@ -19,13 +20,17 @@ var (
 	encode      bool
 	decode      bool
 	language    string
+	gen         bool
+	jsonfile    string
 )
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&abiFilename, "abi", "a", "", "path of simpleabi file; must be in .abi extension; see docs for details")
 	rootCmd.PersistentFlags().BoolVarP(&encode, "encode", "e", false, "enabling this flag generates an encoding abi template")
 	rootCmd.PersistentFlags().BoolVarP(&decode, "decode", "d", false, "enabling this flag generates a decoding abi template")
+	rootCmd.PersistentFlags().BoolVarP(&gen, "datagen", "g", false, "enabling this flag generates encoded data from the provided json file")
 	rootCmd.PersistentFlags().StringVarP(&language, "lang", "l", "c", "defines which language you would like to generate in, must be one of: c")
+	rootCmd.PersistentFlags().StringVarP(&jsonfile, "json", "j", "", "path of json data file")
 }
 
 var rootCmd = &cobra.Command{
@@ -35,11 +40,11 @@ var rootCmd = &cobra.Command{
 for how to make this properly work) and generates a template for smart contract interaction in a variety of available languages. 
 Current languages available are C but we are adamently working hard at Qtum to add more in.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if encode == false && decode == false {
-			fmt.Printf("Must select one of encode or decode (or both) as an option to use this tool\n")
+		if encode == false && decode == false && gen == false {
+			fmt.Printf("Must select one of datagen, encode or decode (or a combination) as an option to use this tool\n")
 			os.Exit(1)
 		}
-
+		fmt.Printf("abi: %s\n", abiFilename)
 		if _, err := os.Stat(abiFilename); os.IsNotExist(err) {
 			fmt.Printf("Please include a valid path to a valid .abi file\n")
 			os.Exit(1)
@@ -107,6 +112,15 @@ Current languages available are C but we are adamently working hard at Qtum to a
 			if err != nil {
 				fmt.Printf("Error in file creation and writing: %v\n", err)
 			}
+		}
+
+		if gen {
+			bytes, err := ioutil.ReadFile(jsonfile)
+			if err != nil {
+				fmt.Printf("Error in json file reading: %v\n", err)
+			}
+			res, err := datagen.GenerateData(interfaceBuilder, bytes)
+			fmt.Printf("%s\n", res)
 		}
 
 	},
