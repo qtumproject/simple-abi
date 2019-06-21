@@ -1,6 +1,6 @@
 package main
 
-import "github.com/VoR0220/SimpleABI/cmd"
+import "github.com/qtumproject/SimpleABI/cmd"
 
 func main() {
 	cmd.Execute()
