@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
-	def "github.com/qtumproject/SimpleABI/definitions"
+	def "github.com/qtumproject/simple-abi/definitions"
 )
 
 // make a function "Parse", which will parse a file's output after opening it

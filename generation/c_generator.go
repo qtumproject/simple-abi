@@ -5,7 +5,7 @@ import (
 	"io"
 	"text/template"
 
-	"github.com/qtumproject/SimpleABI/definitions"
+	"github.com/qtumproject/simple-abi/definitions"
 )
 
 // cDecodingTemplateImpl is a template used for generation of a .c file
