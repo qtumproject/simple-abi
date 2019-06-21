@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/VoR0220/SimpleABI/generation"
-	"github.com/VoR0220/SimpleABI/parser"
+	"github.com/qtumproject/SimpleABI/generation"
+	"github.com/qtumproject/SimpleABI/parser"
 
 	"github.com/spf13/cobra"
 )

@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/VoR0220/SimpleABI/definitions"
+	"github.com/qtumproject/SimpleABI/definitions"
 )
 
 type component int
