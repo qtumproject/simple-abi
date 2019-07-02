@@ -136,7 +136,7 @@ func (typ QType) generateFuncCallBody() []string {
 	switch {
 	case isArray(typ.Type):
 		return []string{
-			fmt.Sprintf("\t*%v_sz = qtumItemSize();", typ.TypeName),
+			fmt.Sprintf("\t*%v_sz = qtumPeekSize();", typ.TypeName),
 			fmt.Sprintf("\t*%v = malloc(*%v_sz * sizeof(**%v));", typ.TypeName, typ.TypeName, typ.TypeName),
 			fmt.Sprintf("\t%v(*%v, *%v_sz * sizeof(**%v));", getQtumPopStatement(typ.Type), typ.TypeName, typ.TypeName, typ.TypeName),
 			fmt.Sprintf("\t*%v_sz /= sizeof(**%v);", typ.TypeName, typ.TypeName),
@@ -170,7 +170,7 @@ func (q QFunc) GenDispatchCodeC(contractName string) string {
 		popStatement := getQtumPopStatement(input.Type)
 		if isArray(input.Type) {
 			statement = append(statement, getBaseType(input.Type)+"_t* "+input.TypeName+";")
-			statement = append(statement, "size_t "+input.TypeName+"_sz = qtumItemSize();")
+			statement = append(statement, "size_t "+input.TypeName+"_sz = qtumPeekSize();")
 			statement = append(statement, input.TypeName+" = malloc("+input.TypeName+"_sz);")
 			statement = append(statement, popStatement+"("+input.TypeName+", "+input.TypeName+"_sz);")
 		} else if input.Type == "uniaddress" {
