@@ -35,7 +35,7 @@ func (q QFunc) GenFuncSignatureC(contractName string, addCallOpts bool) string {
 	var sigInParens []string
 
 	if addCallOpts {
-		sigInParens = append(sigInParens, []string{"UniversalAddress __address", "QtumCallOptions* __options"}...)
+		sigInParens = append(sigInParens, []string{"UniversalAddress *__address", "QtumCallOptions* __options"}...)
 	}
 	for _, input := range q.Inputs {
 		if isArray(input.Type) {
@@ -66,9 +66,15 @@ func (q QFunc) generateFuncCallSignatureC(contractName string) string {
 	var sig []string
 	for _, input := range q.Inputs {
 		sig = append(sig, input.TypeName)
+		if(isArray(input.Type)){
+			sig = append(sig, input.TypeName + "_sz");
+		}
 	}
 	for _, output := range q.Outputs {
-		sig = append(sig, "&"+output.TypeName)
+		sig = append(sig, "&" + output.TypeName)
+		if(isArray(output.Type)){
+			sig = append(sig, "&" + output.TypeName + "_sz");
+		}
 	}
 	return contractName + "_" + q.FuncName + "(" + strings.Join(sig, ", ") + ");"
 }
