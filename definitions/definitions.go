@@ -161,7 +161,7 @@ func (typ QType) generateFuncCallBody() []string {
 func (q QFunc) GenDispatchCodeC(contractName string) string {
 	var statement []string
 	if !q.Payable {
-		statement = append(statement, "if(qtumExec->value > 0) {")
+		statement = append(statement, "if(qtumExec->valueSent > 0) {")
 		statement = append(statement, "\tqtumError(\"nonpayable function\");")
 		statement = append(statement, "}")
 	}
