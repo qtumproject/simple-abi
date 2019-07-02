@@ -61,9 +61,10 @@ func (q QFunc) GenFuncSignatureC(contractName string, isEncoding bool) string {
 	}
 	if isEncoding {
 		return contractName + "_" + q.FuncName + "(" + strings.Join(sigInParens, ", ") + ")"
-	}else{
-		return contractName + "_" + q.FuncName + "_dispatch" + "(" + strings.Join(sigInParens, ", ") + ")"
 	}
+	
+	return contractName + "_" + q.FuncName + "_dispatch" + "(" + strings.Join(sigInParens, ", ") + ")"
+	
 }
 
 func (q QFunc) generateFuncCallSignatureC(contractName string) string {
