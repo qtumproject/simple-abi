@@ -30,19 +30,20 @@ type QType struct {
 }
 
 // GenFuncSignatureC generates a function signature to be used in templating. Takes a contract name to complete the function signature
-// and an addCallOpts to prefix the various inputs and outputs with a UniversalAddress __address and QtumCallOptions* __options
-func (q QFunc) GenFuncSignatureC(contractName string, addCallOpts bool) string {
+// Specifying isEncoding=true will prefix the various inputs and outputs with a UniversalAddress __address and QtumCallOptions* __options
+// if isEncoding is false, then it will assume decoding, and add a "_dispatch" suffix to the function signature
+func (q QFunc) GenFuncSignatureC(contractName string, isEncoding bool) string {
 	var sigInParens []string
 
-	if addCallOpts {
-		sigInParens = append(sigInParens, []string{"UniversalAddress __address", "QtumCallOptions* __options"}...)
+	if isEncoding {
+		sigInParens = append(sigInParens, []string{"const UniversalAddress *__address", "const QtumCallOptions* __options"}...)
 	}
 	for _, input := range q.Inputs {
 		if isArray(input.Type) {
-			sigInParens = append(sigInParens, getBaseType(input.Type)+"_t* "+input.TypeName)
+			sigInParens = append(sigInParens, "const " + getBaseType(input.Type)+"_t* "+input.TypeName)
 			sigInParens = append(sigInParens, "size_t "+input.TypeName+"_sz")
 		} else if input.Type == "uniaddress" {
-			sigInParens = append(sigInParens, "UniversalAddressABI* "+input.TypeName)
+			sigInParens = append(sigInParens, "const UniversalAddressABI* "+input.TypeName)
 		} else {
 			sigInParens = append(sigInParens, input.Type+"_t "+input.TypeName)
 		}
@@ -58,19 +59,30 @@ func (q QFunc) GenFuncSignatureC(contractName string, addCallOpts bool) string {
 			sigInParens = append(sigInParens, output.Type+"_t* "+output.TypeName)
 		}
 	}
-
-	return contractName + "_" + q.FuncName + "(" + strings.Join(sigInParens, ", ") + ")"
+	if isEncoding {
+		return contractName + "_" + q.FuncName + "(" + strings.Join(sigInParens, ", ") + ")"
+	}
+	
+	return contractName + "_" + q.FuncName + "_dispatch" + "(" + strings.Join(sigInParens, ", ") + ")"
+	
 }
 
 func (q QFunc) generateFuncCallSignatureC(contractName string) string {
 	var sig []string
 	for _, input := range q.Inputs {
 		sig = append(sig, input.TypeName)
+		if(isArray(input.Type)){
+			sig = append(sig, input.TypeName + "_sz");
+		}
 	}
 	for _, output := range q.Outputs {
-		sig = append(sig, "&"+output.TypeName)
+		sig = append(sig, "&" + output.TypeName)
+		if(isArray(output.Type)){
+			sig = append(sig, "&" + output.TypeName + "_sz");
+		}
 	}
-	return contractName + "_" + q.FuncName + "(" + strings.Join(sig, ", ") + ");"
+	//this is only used for decoding, so add _dispatch suffix
+	return contractName + "_" + q.FuncName + "_dispatch" + "(" + strings.Join(sig, ", ") + ");"
 }
 
 // GenHashedFuncIdentifier generates a hashed function identifier from a function signature
@@ -130,7 +142,7 @@ func (typ QType) generateFuncCallBody() []string {
 	switch {
 	case isArray(typ.Type):
 		return []string{
-			fmt.Sprintf("\t*%v_sz = qtumItemSize();", typ.TypeName),
+			fmt.Sprintf("\t*%v_sz = qtumPeekSize();", typ.TypeName),
 			fmt.Sprintf("\t*%v = malloc(*%v_sz * sizeof(**%v));", typ.TypeName, typ.TypeName, typ.TypeName),
 			fmt.Sprintf("\t%v(*%v, *%v_sz * sizeof(**%v));", getQtumPopStatement(typ.Type), typ.TypeName, typ.TypeName, typ.TypeName),
 			fmt.Sprintf("\t*%v_sz /= sizeof(**%v);", typ.TypeName, typ.TypeName),
@@ -155,7 +167,7 @@ func (typ QType) generateFuncCallBody() []string {
 func (q QFunc) GenDispatchCodeC(contractName string) string {
 	var statement []string
 	if !q.Payable {
-		statement = append(statement, "if(qtumExec->value > 0) {")
+		statement = append(statement, "if(qtumExec->valueSent > 0) {")
 		statement = append(statement, "\tqtumError(\"nonpayable function\");")
 		statement = append(statement, "}")
 	}
@@ -164,7 +176,7 @@ func (q QFunc) GenDispatchCodeC(contractName string) string {
 		popStatement := getQtumPopStatement(input.Type)
 		if isArray(input.Type) {
 			statement = append(statement, getBaseType(input.Type)+"_t* "+input.TypeName+";")
-			statement = append(statement, "size_t "+input.TypeName+"_sz = qtumItemSize();")
+			statement = append(statement, "size_t "+input.TypeName+"_sz = qtumPeekSize();")
 			statement = append(statement, input.TypeName+" = malloc("+input.TypeName+"_sz);")
 			statement = append(statement, popStatement+"("+input.TypeName+", "+input.TypeName+"_sz);")
 		} else if input.Type == "uniaddress" {
